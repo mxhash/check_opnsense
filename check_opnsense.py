@@ -176,7 +176,6 @@ class CheckOPNsense:
     def __init__(self):
         self.parseOptions()
 
-
-opnsense = CheckOPNsense()
-opnsense.check()
-
+if __name__ == '__main__':
+    opnsense = CheckOPNsense()
+    opnsense.check()
