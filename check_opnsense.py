@@ -53,6 +53,10 @@ class CheckOPNsense:
     VERSION = '0.1.0'
     API_URL = 'https://{}:{}/api/{}'
 
+    MODES = {
+        'updates': 'checkUpdates'
+    }
+
     options = {}
     perfdata = {}
     checkResult = -1
@@ -128,9 +132,10 @@ class CheckOPNsense:
     def check(self):
         self.checkResult = NagiosState.OK
 
-        if self.options.mode == 'updates':
-            self.checkUpdates()
-        else:
+        try:
+            f = getattr(self, self.MODES[self.options.mode])
+            f()
+        except (KeyError, AttributeError):
             message = "Check mode '{}' not known".format(self.options.mode)
             self.output(NagiosState.UNKNOWN, message)
 
@@ -153,7 +158,7 @@ class CheckOPNsense:
         check_opts = p.add_argument_group('Check Options')
 
         check_opts.add_argument("-m", "--mode",
-                                choices=('updates',),
+                                choices=self.MODES.keys(),
                                 required=True,
                                 help="Mode to use.")
         check_opts.add_argument('-w', '--warning', dest='treshold_warning', type=float,
