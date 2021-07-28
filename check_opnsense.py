@@ -57,9 +57,14 @@ class CheckOPNsense:
     perfdata = {}
     checkResult = -1
     checkMessage = ""
+    checkLongOutput = []
 
     def checkOutput(self):
         message = self.checkMessage
+
+        if len(self.checkLongOutput):
+            message += "\n" + "\n".join(self.checkLongOutput)
+
         if self.perfdata:
             message += '|' + self.getPerfdata()
 
@@ -176,7 +181,15 @@ class CheckOPNsense:
         else:
             self.checkMessage = "System up to date"
 
-        self.checkMessage += ' ({}/{})'.format(data['product_id'], data['product_version'])
+        self.checkMessage += ' (version={}/{})'.format(data['product_id'], data['product_version'])
+
+        self.checkLongOutput.append(
+            '* Last update check: {}'.format(data['last_check'])
+        )
+
+        self.checkLongOutput.append(
+            '* OS version: {}'.format(data['os_version'])
+        )
 
     def __init__(self):
         self.parseOptions()
