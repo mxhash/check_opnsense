@@ -220,6 +220,16 @@ class CheckOPNsense:
                 self.checkResult = NagiosState.CRITICAL
             elif count == count_max:
                 self.checkResult = NagiosState.OK
+    
+    @checkmode
+    def checkIpsec(self):
+        url = self.getURL('ipsec/service/status')
+        data = self.request(url)
+
+        if data['status'] == 'running':
+            self.checkMessage = 'IPsec: {status}'.format(**data)
+            self.checkResult = NagiosState.OK
+
 
     def __init__(self):
         self.parseOptions()
