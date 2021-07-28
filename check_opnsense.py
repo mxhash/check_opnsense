@@ -176,6 +176,8 @@ class CheckOPNsense:
         else:
             self.checkMessage = "System up to date"
 
+        self.checkMessage += ' ({}/{})'.format(data['product_id'], data['product_version'])
+
     def __init__(self):
         self.parseOptions()
 
