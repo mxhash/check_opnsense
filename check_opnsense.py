@@ -54,16 +54,19 @@ class CheckOPNsense:
     API_URL = 'https://{}:{}/api/{}'
 
     options = {}
-    perfdata = []
+    perfdata = {}
     checkResult = -1
     checkMessage = ""
 
     def checkOutput(self):
         message = self.checkMessage
         if self.perfdata:
-            message += self.getPerfdata()
+            message += '|' + self.getPerfdata()
 
         self.output(self.checkResult, message)
+
+    def getPerfdata(self):
+        return ' '.join(['\'{0}\'={1}'.format(key, value) for (key, value) in self.perfdata.items()])
 
     def output(self, returnCode, message):
         prefix = returnCode.name
