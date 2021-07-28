@@ -41,6 +41,12 @@ except ImportError as e:
     print("Missing python module: {}".format(e.message))
     sys.exit(255)
 
+MODES = {}
+
+def checkmode(f):
+    MODES[(f.__name__.replace('check', '').lower())] = f.__name__
+
+    return f
 
 class NagiosState(Enum):
     OK = 0
@@ -52,10 +58,6 @@ class NagiosState(Enum):
 class CheckOPNsense:
     VERSION = '0.1.0'
     API_URL = 'https://{}:{}/api/{}'
-
-    MODES = {
-        'updates': 'checkUpdates'
-    }
 
     options = {}
     perfdata = {}
@@ -133,7 +135,7 @@ class CheckOPNsense:
         self.checkResult = NagiosState.OK
 
         try:
-            f = getattr(self, self.MODES[self.options.mode])
+            f = getattr(self, MODES[self.options.mode])
             f()
         except (KeyError, AttributeError):
             message = "Check mode '{}' not known".format(self.options.mode)
@@ -158,7 +160,7 @@ class CheckOPNsense:
         check_opts = p.add_argument_group('Check Options')
 
         check_opts.add_argument("-m", "--mode",
-                                choices=self.MODES.keys(),
+                                choices=MODES.keys(),
                                 required=True,
                                 help="Mode to use.")
         check_opts.add_argument('-w', '--warning', dest='treshold_warning', type=float,
@@ -170,6 +172,7 @@ class CheckOPNsense:
 
         self.options = options
 
+    @checkmode
     def checkUpdates(self):
         url = self.getURL('core/firmware/status')
         data = self.request(url)
@@ -195,6 +198,28 @@ class CheckOPNsense:
         self.checkLongOutput.append(
             '* OS version: {}'.format(data['os_version'])
         )
+
+    @checkmode
+    def checkRoutes(self):
+        url = self.getURL('routes/gateway/status')
+        data = self.request(url)
+
+        if data['status'] == 'ok':
+            count = 0
+            count_max = len(data['items'])
+            for item in data['items']:
+                self.checkLongOutput.append('* {name} ({address}) **{status_translated}** (rtt={delay}, loss={loss})'.format(**item))
+                if item['status_translated'] == 'Online':
+                    count += 1
+
+            self.checkMessage = 'Gateways online: {}/{}'.format(count, count_max)
+
+            self.checkResult = NagiosState.UNKNOWN
+
+            if count == 0 or count != count_max:
+                self.checkResult = NagiosState.CRITICAL
+            elif count == count_max:
+                self.checkResult = NagiosState.OK
 
     def __init__(self):
         self.parseOptions()
